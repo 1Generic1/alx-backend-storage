@@ -1,23 +1,39 @@
 #!/usr/bin/env python3
 """
-   this script Analyzes Nginx logs stored in a MongoDB collection and provides statistics.
+Provide some stats about Nginx logs stored in MongoDB
+Database: logs, Collection: nginx, Display same as example
+first line: x logs, x number of documents in this collection
+second line: Methods
+5 lines with method = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+one line with method=GET, path=/status
 """
+from pymongo import MongoClient
 
 
-def nginx_logs_stats():
+METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"]
+
+
+def log_stats(mongo_collection, option=None):
     """
-   this script Analyzes Nginx logs stored in a MongoDB collection and provides statistics.
+    Prototype: def log_stats(mongo_collection, option=None):
+    Provide some stats about Nginx logs stored in MongoDB
     """
-    client = MongoClient('localhost', 27017)
-    db = client['logs']
-    collection = db['nginx']
-    total_logs = collection.count_documents({})
-    method_counts = {"GET": 0, "POST": 0, "PUT": 0, "PATCH": 0, "DELETE": 0}
-    for doc in collection.find({}, {"_id": 0, "method": 1}):
-        method = doc["method"]
-        if method in method_counts:
-            method_counts[method] += 1
-    print("\tMethods:")
-    for method, count in method_counts.items():
-        print(f"\t\t{count} {method}")
-    count_status = collection.count_documents({"method": "GET", "path": "/status"})
+    items = {}
+    if option:
+        value = mongo_collection.count_documents(
+            {"method": {"$regex": option}})
+        print(f"\tmethod {option}: {value}")
+        return
+
+    result = mongo_collection.count_documents(items)
+    print(f"{result} logs")
+    print("Methods:")
+    for method in METHODS:
+        log_stats(nginx_collection, method)
+    status_check = mongo_collection.count_documents({"path": "/status"})
+    print(f"{status_check} status check")
+
+
+if __name__ == "__main__":
+    nginx_collection = MongoClient('mongodb://127.0.0.1:27017').logs.nginx
+    log_stats(nginx_collection)
